@@ -21,3 +21,4 @@ Para chequear que la aplicacion levanto correctamente (Procedemos a consumir el 
 ```
 http://localhost:9002/metrics/health
 ```
+d
