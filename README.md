@@ -1,4 +1,8 @@
 ---
+# DACS Conector
+
+Este proyecto es el conector principal del backend/BFF. Su función es actuar como intermediario entre los distintos servicios y módulos del sistema, gestionando la comunicación, integración y procesamiento de datos necesarios para el funcionamiento de la aplicación.
+
 # ms-dacs-conector
 
 Microservicio para conector de apis externas
