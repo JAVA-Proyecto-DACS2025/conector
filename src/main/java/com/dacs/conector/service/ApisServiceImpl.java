@@ -26,7 +26,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 @Service
-public class PacienteServiceImpl implements PacienteService {
+public class ApisServiceImpl implements ApisService {
 
     @Autowired
     private PacienteClient pacienteClient;
@@ -287,7 +287,8 @@ public class PacienteServiceImpl implements PacienteService {
     /**
      * Obtiene un usuario por ID
      */
-    private KeycloakUserDto getUserById(String userId) {
+    @Override
+    public KeycloakUserDto getUserById(String userId) {
         String url = keycloakBaseUrl + "/admin/realms/" + keycloakRealm + "/users/" + userId;
 
         HttpHeaders headers = new HttpHeaders();
@@ -349,6 +350,45 @@ public class PacienteServiceImpl implements PacienteService {
             }
         } catch (HttpClientErrorException e) {
             System.err.println("Error eliminando roles: " + e.getResponseBodyAsString());
+        }
+    }
+
+    @Override
+    public KeycloakUserDto updateUserStatus(String userId, Boolean enabled) {
+        String url = keycloakBaseUrl + "/admin/realms/" + keycloakRealm + "/users/" + userId;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+
+        // Primero obtener el usuario actual
+        KeycloakUserDto currentUser = getUserById(userId);
+        
+        if (currentUser == null) {
+            throw new RuntimeException("Usuario no encontrado: " + userId);
+        }
+
+        // Solo actualizar el campo enabled
+        currentUser.setEnabled(enabled);
+        currentUser.setRoles(null); // Keycloak no acepta este campo
+
+        HttpEntity<KeycloakUserDto> request = new HttpEntity<>(currentUser, headers);
+
+        try {
+            keycloakRestTemplate.exchange(
+                    url,
+                    HttpMethod.PUT,
+                    request,
+                    Void.class);
+
+            System.out.println("DEBUG - Usuario " + userId + " actualizado, enabled: " + enabled);
+
+            // Obtener el usuario actualizado para devolverlo
+            return getUserById(userId);
+
+        } catch (HttpClientErrorException e) {
+            System.err.println("Error actualizando estado del usuario: " + e.getResponseBodyAsString());
+            throw new RuntimeException("Error al actualizar estado en Keycloak: " + e.getMessage());
         }
     }
 }

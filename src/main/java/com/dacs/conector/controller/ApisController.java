@@ -11,7 +11,7 @@ import com.dacs.conector.dto.ApiResponseDto;
 import com.dacs.conector.dto.KeycloakUserDto;
 import com.dacs.conector.dto.PacienteDto;
 import com.dacs.conector.dto.PaginacionDto;
-import com.dacs.conector.service.PacienteService;
+import com.dacs.conector.service.ApisService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,10 +22,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 @RestController
 @Slf4j
 @RequestMapping("/api/external")
-public class PacienteController {
+public class ApisController {
 
     @Autowired
-    private PacienteService pacienteService;
+    private ApisService pacienteService;
 
     @GetMapping("paciente")
     public PacienteDto searchPaciente(@RequestParam("cantidad") int cantidad,
@@ -41,6 +41,17 @@ public class PacienteController {
             @RequestParam(value = "search", required = false, defaultValue = "") String search) {
         log.info("GET /api/external/users called");
         return pacienteService.getUsers(page, size, search);
+    }
+
+    @GetMapping("users/{id}")
+    public ApiResponseDto<KeycloakUserDto> getUser(@PathVariable("id") String id) {
+        log.info("GET /api/external/users/{} called", id);
+        KeycloakUserDto user = pacienteService.getUserById(id);
+        return ApiResponseDto.<KeycloakUserDto>builder()
+                .success(true)
+                .data(user)
+                .message("Usuario obtenido correctamente")
+                .build();
     }
 
     @PostMapping("users")
@@ -62,6 +73,19 @@ public class PacienteController {
                 .success(true)
                 .data(updatedUser)
                 .message("Usuario actualizado correctamente")
+                .build();
+    }
+
+    @PutMapping("users/{id}/status")
+    public ApiResponseDto<KeycloakUserDto> updateUserStatus(
+            @PathVariable String id, 
+            @RequestParam("enabled") Boolean enabled) {
+        log.info("PUT /api/external/users/{}/status called, enabled={}", id, enabled);
+        KeycloakUserDto userDto = pacienteService.updateUserStatus(id, enabled);
+        return ApiResponseDto.<KeycloakUserDto>builder()
+                .success(true)
+                .data(userDto)
+                .message("Estado del usuario actualizado correctamente")
                 .build();
     }
 }
