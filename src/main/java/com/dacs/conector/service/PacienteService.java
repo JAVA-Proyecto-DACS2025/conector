@@ -11,4 +11,7 @@ public interface PacienteService {
 
     PaginacionDto<KeycloakUserDto> getUsers(int page, int size, String search);
 
+    String createUser(KeycloakUserDto.Create userDto);
+
+
 }
