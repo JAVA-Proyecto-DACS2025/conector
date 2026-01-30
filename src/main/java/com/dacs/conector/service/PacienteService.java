@@ -13,5 +13,5 @@ public interface PacienteService {
 
     String createUser(KeycloakUserDto.Create userDto);
 
-
+    KeycloakUserDto updateUser(String id, KeycloakUserDto.Update userDto);
 }

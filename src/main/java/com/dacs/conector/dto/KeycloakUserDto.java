@@ -15,7 +15,7 @@ import lombok.AllArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonInclude(JsonInclude.Include.NON_NULL)  // No incluir campos null en JSON
+@JsonInclude(JsonInclude.Include.NON_NULL) // No incluir campos null en JSON
 public class KeycloakUserDto {
     private String id;
     private String username;
@@ -26,7 +26,7 @@ public class KeycloakUserDto {
     private boolean emailVerified;
     private Long createdTimestamp;
     private Map<String, List<String>> attributes;
-    
+
     // Campo para los roles
     private List<String> roles;
 
@@ -34,10 +34,19 @@ public class KeycloakUserDto {
     @EqualsAndHashCode(callSuper = true)
     @NoArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
-    @JsonInclude(JsonInclude.Include.NON_NULL)  // No incluir campos null en JSON
+    @JsonInclude(JsonInclude.Include.NON_NULL) // No incluir campos null en JSON
     public static class Create extends KeycloakUserDto {
         private List<CredentialRepresentation> credentials;
         // No declarar roles aquí - usa el heredado del padre
+    }
+
+    @Data
+    @EqualsAndHashCode(callSuper = true)
+    @NoArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL) // No incluir campos null en JSON
+    public static class Update extends KeycloakUserDto {
+        private List<CredentialRepresentation> credentials;
     }
 
     @Data
@@ -49,3 +58,4 @@ public class KeycloakUserDto {
         private Boolean temporary = false;
     }
 }
+

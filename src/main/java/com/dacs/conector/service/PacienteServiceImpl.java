@@ -234,4 +234,121 @@ public class PacienteServiceImpl implements PacienteService {
         private Boolean clientRole;
         private String containerId;
     }
+
+    @Override
+    public KeycloakUserDto updateUser(String userId, KeycloakUserDto.Update userDto) {
+        String url = keycloakBaseUrl + "/admin/realms/" + keycloakRealm + "/users/" + userId;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+
+        // Guardar los roles antes de enviar (Keycloak no acepta el campo roles en update)
+        List<String> rolesToAssign = userDto.getRoles();
+        
+        System.out.println("DEBUG - Roles a actualizar: " + rolesToAssign);
+        
+        // Keycloak no acepta el campo roles, lo limpiamos
+        userDto.setRoles(null);
+        
+        // Asegurar que el ID esté seteado
+        userDto.setId(userId);
+
+        HttpEntity<KeycloakUserDto.Update> request = new HttpEntity<>(userDto, headers);
+
+        try {
+            // Keycloak usa PUT para actualizar usuario
+            keycloakRestTemplate.exchange(
+                    url,
+                    HttpMethod.PUT,
+                    request,
+                    Void.class);
+
+            System.out.println("DEBUG - Usuario actualizado con ID: " + userId);
+
+            // Actualizar roles si se especificaron
+            if (rolesToAssign != null && !rolesToAssign.isEmpty()) {
+                // Primero eliminar los roles actuales
+                removeAllRealmRoles(userId);
+                // Luego asignar los nuevos roles
+                System.out.println("DEBUG - Asignando roles: " + rolesToAssign);
+                assignRolesToUser(userId, rolesToAssign);
+            }
+
+            // Obtener el usuario actualizado para devolverlo
+            return getUserById(userId);
+
+        } catch (HttpClientErrorException e) {
+            System.err.println("Error actualizando usuario: " + e.getResponseBodyAsString());
+            throw new RuntimeException("Error al actualizar usuario en Keycloak: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Obtiene un usuario por ID
+     */
+    private KeycloakUserDto getUserById(String userId) {
+        String url = keycloakBaseUrl + "/admin/realms/" + keycloakRealm + "/users/" + userId;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<KeycloakUserDto> response = keycloakRestTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    entity,
+                    KeycloakUserDto.class);
+
+            KeycloakUserDto user = response.getBody();
+            if (user != null) {
+                // Obtener roles del usuario
+                user.setRoles(getUserRoles(userId));
+            }
+            return user;
+
+        } catch (HttpClientErrorException e) {
+            System.err.println("Error obteniendo usuario: " + e.getResponseBodyAsString());
+            throw new RuntimeException("Error al obtener usuario de Keycloak: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Elimina todos los roles de realm del usuario
+     */
+    private void removeAllRealmRoles(String userId) {
+        String url = keycloakBaseUrl + "/admin/realms/" + keycloakRealm 
+               + "/users/" + userId + "/role-mappings/realm";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
+        try {
+            // Primero obtener los roles actuales
+            ResponseEntity<RoleRepresentation[]> response = keycloakRestTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    entity,
+                    RoleRepresentation[].class);
+
+            if (response.getBody() != null && response.getBody().length > 0) {
+                // Eliminar los roles actuales
+                List<RoleRepresentation> currentRoles = Arrays.asList(response.getBody());
+                HttpEntity<List<RoleRepresentation>> deleteRequest = new HttpEntity<>(currentRoles, headers);
+                
+                keycloakRestTemplate.exchange(
+                        url,
+                        HttpMethod.DELETE,
+                        deleteRequest,
+                        Void.class);
+                
+                System.out.println("DEBUG - Roles anteriores eliminados");
+            }
+        } catch (HttpClientErrorException e) {
+            System.err.println("Error eliminando roles: " + e.getResponseBodyAsString());
+        }
+    }
 }

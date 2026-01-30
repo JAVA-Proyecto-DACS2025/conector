@@ -1,11 +1,11 @@
 package com.dacs.conector.controller;
 
-import java.security.Key;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 
 import com.dacs.conector.dto.ApiResponseDto;
 import com.dacs.conector.dto.KeycloakUserDto;
@@ -51,5 +51,17 @@ public class PacienteController {
                 .data(null)
                 .message(pacienteService.createUser(userDto))
                 .build();  
+    }
+
+    @PutMapping("users/{id}")
+    public ApiResponseDto<KeycloakUserDto> updateUser(@PathVariable("id") String id, 
+            @RequestBody KeycloakUserDto.Update userDto) {
+        log.info("PUT /api/external/users/{} called", id);
+        KeycloakUserDto updatedUser = pacienteService.updateUser(id, userDto);
+        return ApiResponseDto.<KeycloakUserDto>builder()
+                .success(true)
+                .data(updatedUser)
+                .message("Usuario actualizado correctamente")
+                .build();
     }
 }
